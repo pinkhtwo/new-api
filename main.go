@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -163,7 +164,12 @@ func main() {
 	// Log startup success message
 	common.LogStartupSuccess(startTime, port)
 
-	err = server.Run(":" + port)
+	// 使用自定义 HTTP 处理器包装 Gin 引擎
+	// 防呆设计：在 Gin 路由匹配之前规范化路径
+	// 处理双斜杠等问题，例如 //chat/completions -> /chat/completions
+	handler := PathNormalizeHandler(server)
+
+	err = http.ListenAndServe(":"+port, handler)
 	if err != nil {
 		common.FatalLog("failed to start HTTP server: " + err.Error())
 	}
@@ -257,4 +263,49 @@ func InitResources() error {
 		return err
 	}
 	return nil
+}
+
+// PathNormalizeHandler 包装 HTTP 处理器，在请求到达 Gin 之前规范化路径
+// 防呆设计：处理双斜杠等常见路径问题
+func PathNormalizeHandler(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// 规范化路径
+		originalPath := r.URL.Path
+		normalizedPath := normalizePath(originalPath)
+
+		if normalizedPath != originalPath {
+			// 更新请求路径
+			r.URL.Path = normalizedPath
+			if r.URL.RawPath != "" {
+				r.URL.RawPath = normalizedPath
+			}
+		}
+
+		// 调用原始处理器
+		handler.ServeHTTP(w, r)
+	})
+}
+
+// normalizePath 规范化路径
+// 1. 移除多余的斜杠 (// -> /)
+// 2. 保持路径的结构
+func normalizePath(p string) string {
+	// 使用 path.Clean 来规范化路径
+	// 但是 path.Clean 会移除尾部斜杠，我们需要保留它
+	hasTrailingSlash := len(p) > 1 && p[len(p)-1] == '/'
+
+	// 规范化路径
+	cleaned := path.Clean(p)
+
+	// 确保路径以 / 开头
+	if !strings.HasPrefix(cleaned, "/") {
+		cleaned = "/" + cleaned
+	}
+
+	// 如果原路径有尾部斜杠且不是根路径，保留它
+	if hasTrailingSlash && cleaned != "/" {
+		cleaned += "/"
+	}
+
+	return cleaned
 }
