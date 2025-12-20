@@ -223,8 +223,9 @@ func ListModels(c *gin.Context, modelType int) {
 		userGeminiModels := make([]dto.GeminiModel, len(userOpenAiModels))
 		for i, model := range userOpenAiModels {
 			userGeminiModels[i] = dto.GeminiModel{
-				Name:        model.Id,
-				DisplayName: model.Id,
+				Name:                       "models/" + model.Id,
+				DisplayName:                model.Id,
+				SupportedGenerationMethods: []interface{}{"generateContent", "streamGenerateContent", "countTokens"},
 			}
 		}
 		c.JSON(200, gin.H{
