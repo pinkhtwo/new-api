@@ -20,7 +20,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: new-api:local
+    image: demokt/new-api:latest
     container_name: new-api
     restart: always
     command: --log-dir /app/logs
