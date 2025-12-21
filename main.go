@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -266,46 +265,26 @@ func InitResources() error {
 }
 
 // PathNormalizeHandler 包装 HTTP 处理器，在请求到达 Gin 之前规范化路径
-// 防呆设计：处理双斜杠等常见路径问题
+// 防呆设计：
+//  1. 处理双斜杠等常见路径问题
+//  2. 智能提取 API 端点：无论用户在 URL 中添加什么前缀，都能正确路由
+//     例如：/ABC/v1/chat/completions -> /v1/chat/completions
+//     /我是奶龙/v1beta/models/gemini-pro:generateContent -> /v1beta/models/gemini-pro:generateContent
 func PathNormalizeHandler(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// 规范化路径
+		// 规范化路径并智能提取 API 端点
 		originalPath := r.URL.Path
-		normalizedPath := normalizePath(originalPath)
+		extractedPath := common.NormalizeAndExtractPath(originalPath)
 
-		if normalizedPath != originalPath {
+		if extractedPath != originalPath {
 			// 更新请求路径
-			r.URL.Path = normalizedPath
+			r.URL.Path = extractedPath
 			if r.URL.RawPath != "" {
-				r.URL.RawPath = normalizedPath
+				r.URL.RawPath = extractedPath
 			}
 		}
 
 		// 调用原始处理器
 		handler.ServeHTTP(w, r)
 	})
-}
-
-// normalizePath 规范化路径
-// 1. 移除多余的斜杠 (// -> /)
-// 2. 保持路径的结构
-func normalizePath(p string) string {
-	// 使用 path.Clean 来规范化路径
-	// 但是 path.Clean 会移除尾部斜杠，我们需要保留它
-	hasTrailingSlash := len(p) > 1 && p[len(p)-1] == '/'
-
-	// 规范化路径
-	cleaned := path.Clean(p)
-
-	// 确保路径以 / 开头
-	if !strings.HasPrefix(cleaned, "/") {
-		cleaned = "/" + cleaned
-	}
-
-	// 如果原路径有尾部斜杠且不是根路径，保留它
-	if hasTrailingSlash && cleaned != "/" {
-		cleaned += "/"
-	}
-
-	return cleaned
 }
