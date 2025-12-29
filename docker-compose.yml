@@ -16,10 +16,6 @@ version: '3.4' # For compatibility with older Docker versions
 
 services:
   new-api:
-    # 使用本地代码构建而非预构建镜像
-    build:
-      context: .
-      dockerfile: Dockerfile
     image: demokt/new-api:latest
     container_name: new-api
     restart: always
