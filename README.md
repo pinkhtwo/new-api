@@ -2,38 +2,26 @@
 
 ![new-api](/web/public/logo.png)
 
-# New API
+# New API (魔改版)
 
-🍥 **新一代大模型网关与AI资产管理系统**
+🍥 **新一代大模型网关与AI资产管理系统** - 个人魔改版本
 
 <p align="center">
-  <strong>中文</strong> | 
-  <a href="./README.en.md">English</a> | 
-  <a href="./README.fr.md">Français</a> | 
+  <strong>中文</strong> |
+  <a href="./README.en.md">English</a> |
+  <a href="./README.fr.md">Français</a> |
   <a href="./README.ja.md">日本語</a>
 </p>
 
 <p align="center">
-  <a href="https://raw.githubusercontent.com/Calcium-Ion/new-api/main/LICENSE">
-    <img src="https://img.shields.io/github/license/Calcium-Ion/new-api?color=brightgreen" alt="license">
+  <a href="https://raw.githubusercontent.com/pinkhtwo/new-api/main/LICENSE">
+    <img src="https://img.shields.io/github/license/pinkhtwo/new-api?color=brightgreen" alt="license">
   </a>
-  <a href="https://github.com/Calcium-Ion/new-api/releases/latest">
-    <img src="https://img.shields.io/github/v/release/Calcium-Ion/new-api?color=brightgreen&include_prereleases" alt="release">
+  <a href="https://github.com/pinkhtwo/new-api/releases/latest">
+    <img src="https://img.shields.io/github/v/release/pinkhtwo/new-api?color=brightgreen&include_prereleases" alt="release">
   </a>
-  <a href="https://github.com/users/Calcium-Ion/packages/container/package/new-api">
-    <img src="https://img.shields.io/badge/docker-ghcr.io-blue" alt="docker">
-  </a>
-  <a href="https://hub.docker.com/r/CalciumIon/new-api">
-    <img src="https://img.shields.io/badge/docker-dockerHub-blue" alt="docker">
-  </a>
-  <a href="https://goreportcard.com/report/github.com/Calcium-Ion/new-api">
-    <img src="https://goreportcard.com/badge/github.com/Calcium-Ion/new-api" alt="GoReportCard">
-  </a>
-</p>
-
-<p align="center">
-  <a href="https://trendshift.io/repositories/8227" target="_blank">
-    <img src="https://trendshift.io/api/badge/repositories/8227" alt="Calcium-Ion%2Fnew-api | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/>
+  <a href="https://github.com/pinkhtwo/new-api">
+    <img src="https://img.shields.io/badge/fork-pinkhtwo-orange" alt="fork">
   </a>
 </p>
 
@@ -49,39 +37,15 @@
 
 ## 📝 项目说明
 
-> [!NOTE]  
-> 本项目为开源项目，在 [One API](https://github.com/songquanpeng/one-api) 的基础上进行二次开发
+> [!NOTE]
+> 本项目为 [New API](https://github.com/Calcium-Ion/new-api) 的个人魔改版本，基于 [One API](https://github.com/songquanpeng/one-api) 进行二次开发
+>
+> ⚠️ **注意：本魔改版与官方版本存在差异，请以本仓库的安装说明为准**
 
 > [!IMPORTANT]  
 > - 本项目仅供个人学习使用，不保证稳定性，且不提供任何技术支持
 > - 使用者必须在遵循 OpenAI 的 [使用条款](https://openai.com/policies/terms-of-use) 以及**法律法规**的情况下使用，不得用于非法用途
 > - 根据 [《生成式人工智能服务管理暂行办法》](http://www.cac.gov.cn/2023-07/13/c_1690898327029107.htm) 的要求，请勿对中国地区公众提供一切未经备案的生成式人工智能服务
-
----
-
-## 🤝 我们信任的合作伙伴
-
-<p align="center">
-  <em>排名不分先后</em>
-</p>
-
-<p align="center">
-  <a href="https://www.cherry-ai.com/" target="_blank">
-    <img src="./docs/images/cherry-studio.png" alt="Cherry Studio" height="80" />
-  </a>
-  <a href="https://bda.pku.edu.cn/" target="_blank">
-    <img src="./docs/images/pku.png" alt="北京大学" height="80" />
-  </a>
-  <a href="https://www.compshare.cn/?ytag=GPU_yy_gh_newapi" target="_blank">
-    <img src="./docs/images/ucloud.png" alt="UCloud 优刻得" height="80" />
-  </a>
-  <a href="https://www.aliyun.com/" target="_blank">
-    <img src="./docs/images/aliyun.png" alt="阿里云" height="80" />
-  </a>
-  <a href="https://io.net/" target="_blank">
-    <img src="./docs/images/io-net.png" alt="IO.NET" height="80" />
-  </a>
-</p>
 
 ---
 
@@ -104,8 +68,8 @@
 ### 使用 Docker Compose（推荐）
 
 ```bash
-# 克隆项目
-git clone https://github.com/QuantumNous/new-api.git
+# 克隆魔改版项目
+git clone https://github.com/pinkhtwo/new-api.git
 cd new-api
 
 # 编辑 docker-compose.yml 配置
@@ -119,8 +83,8 @@ docker-compose up -d
 <summary><strong>使用 Docker 命令</strong></summary>
 
 ```bash
-# 拉取最新镜像
-docker pull calciumion/new-api:latest
+# 如果您有自己构建的镜像，请替换为您的镜像名称
+# 或者使用官方镜像：calciumion/new-api:latest
 
 # 使用 SQLite（默认）
 docker run --name new-api -d --restart always \
@@ -138,7 +102,29 @@ docker run --name new-api -d --restart always \
   calciumion/new-api:latest
 ```
 
-> **💡 提示：** `-v ./data:/data` 会将数据保存在当前目录的 `data` 文件夹中，你也可以改为绝对路径如 `-v /your/custom/path:/data`
+> **💡 提示：**
+> - `-v ./data:/data` 会将数据保存在当前目录的 `data` 文件夹中，你也可以改为绝对路径如 `-v /your/custom/path:/data`
+> - 如需使用魔改版特性，建议自行构建 Docker 镜像或从源码运行
+
+</details>
+
+<details>
+<summary><strong>从源码运行（推荐魔改版）</strong></summary>
+
+```bash
+# 克隆魔改版项目
+git clone https://github.com/pinkhtwo/new-api.git
+cd new-api
+
+# 安装依赖并构建前端
+cd web && npm install && npm run build && cd ..
+
+# 构建后端
+go build -o new-api
+
+# 运行
+./new-api
+```
 
 </details>
 
@@ -146,15 +132,15 @@ docker run --name new-api -d --restart always \
 
 🎉 部署完成后，访问 `http://localhost:3000` 即可使用！
 
-📖 更多部署方式请参考 [部署指南](https://docs.newapi.pro/installation)
-
 ---
 
 ## 📚 文档
 
 <div align="center">
 
-### 📖 [官方文档](https://docs.newapi.pro/) | [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/QuantumNous/new-api)
+### 📖 [官方文档](https://docs.newapi.pro/)
+
+> **注意：** 官方文档适用于原版 New API，本魔改版可能存在差异
 
 </div>
 
@@ -283,7 +269,9 @@ docker run --name new-api -d --restart always \
 ## 🚢 部署
 
 > [!TIP]
-> **最新版 Docker 镜像：** `calciumion/new-api:latest`
+> **魔改版建议从源码构建或自行构建 Docker 镜像**
+>
+> 官方 Docker 镜像：`calciumion/new-api:latest`（不包含魔改内容）
 
 ### 📋 部署要求
 
@@ -317,11 +305,11 @@ docker run --name new-api -d --restart always \
 ### 🔧 部署方式
 
 <details>
-<summary><strong>方式 1：Docker Compose（推荐）</strong></summary>
+<summary><strong>方式 1：Docker Compose</strong></summary>
 
 ```bash
-# 克隆项目
-git clone https://github.com/QuantumNous/new-api.git
+# 克隆魔改版项目
+git clone https://github.com/pinkhtwo/new-api.git
 cd new-api
 
 # 编辑配置
@@ -394,7 +382,8 @@ docker run --name new-api -d --restart always \
 
 | 项目 | 说明 |
 |------|------|
-| [One API](https://github.com/songquanpeng/one-api) | 原版项目基础 |
+| [New API (官方)](https://github.com/Calcium-Ion/new-api) | 官方原版项目 |
+| [One API](https://github.com/songquanpeng/one-api) | 最初项目基础 |
 | [Midjourney-Proxy](https://github.com/novicezk/midjourney-proxy) | Midjourney 接口支持 |
 
 ### 配套工具
@@ -413,9 +402,8 @@ docker run --name new-api -d --restart always \
 | 资源 | 链接 |
 |------|------|
 | 📘 常见问题 | [FAQ](https://docs.newapi.pro/support/faq) |
-| 💬 社区交流 | [交流渠道](https://docs.newapi.pro/support/community-interaction) |
-| 🐛 反馈问题 | [问题反馈](https://docs.newapi.pro/support/feedback-issues) |
-| 📚 完整文档 | [官方文档](https://docs.newapi.pro/support) |
+| 🐛 魔改版问题反馈 | [Issues](https://github.com/pinkhtwo/new-api/issues) |
+| 📚 官方文档（参考） | [官方文档](https://docs.newapi.pro/support) |
 
 ### 🤝 贡献指南
 
@@ -432,7 +420,7 @@ docker run --name new-api -d --restart always \
 
 <div align="center">
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Calcium-Ion/new-api&type=Date)](https://star-history.com/#Calcium-Ion/new-api&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=pinkhtwo/new-api&type=Date)](https://star-history.com/#pinkhtwo/new-api&Date)
 
 </div>
 
@@ -440,12 +428,12 @@ docker run --name new-api -d --restart always \
 
 <div align="center">
 
-### 💖 感谢使用 New API
+### 💖 感谢使用 New API 魔改版
 
-如果这个项目对你有帮助，欢迎给我们一个 ⭐️ Star！
+如果这个项目对你有帮助，欢迎给一个 ⭐️ Star！
 
-**[官方文档](https://docs.newapi.pro/)** • **[问题反馈](https://github.com/Calcium-Ion/new-api/issues)** • **[最新发布](https://github.com/Calcium-Ion/new-api/releases)**
+**[问题反馈](https://github.com/pinkhtwo/new-api/issues)** • **[最新发布](https://github.com/pinkhtwo/new-api/releases)**
 
-<sub>Built with ❤️ by QuantumNous</sub>
+<sub>Fork from [Calcium-Ion/new-api](https://github.com/Calcium-Ion/new-api) with ❤️</sub>
 
 </div>
