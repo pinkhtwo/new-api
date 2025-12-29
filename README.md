@@ -2,9 +2,9 @@
 
 ![new-api](/web/public/logo.png)
 
-# New API (魔改版)
+# New API (Demo)
 
-🍥 **新一代大模型网关与AI资产管理系统** - 个人魔改版本
+🍥 **新一代大模型网关与AI资产管理系统** - Demo 优化版
 
 <p align="center">
   <strong>中文</strong> |
@@ -21,16 +21,16 @@
     <img src="https://img.shields.io/github/v/release/pinkhtwo/new-api?color=brightgreen&include_prereleases" alt="release">
   </a>
   <a href="https://github.com/pinkhtwo/new-api">
-    <img src="https://img.shields.io/badge/fork-pinkhtwo-orange" alt="fork">
+    <img src="https://img.shields.io/badge/Demo-pinkhtwo-orange" alt="demo">
   </a>
 </p>
 
 <p align="center">
   <a href="#-快速开始">快速开始</a> •
+  <a href="#-demo-版优化特性">Demo 特性</a> •
   <a href="#-主要特性">主要特性</a> •
   <a href="#-部署">部署</a> •
-  <a href="#-文档">文档</a> •
-  <a href="#-帮助支持">帮助</a>
+  <a href="#-文档">文档</a>
 </p>
 
 </div>
@@ -38,9 +38,27 @@
 ## 📝 项目说明
 
 > [!NOTE]
-> 本项目为 [New API](https://github.com/Calcium-Ion/new-api) 的个人魔改版本，基于 [One API](https://github.com/songquanpeng/one-api) 进行二次开发
+> 本项目为 [New API](https://github.com/Calcium-Ion/new-api) 的 Demo 优化版本，基于 [One API](https://github.com/songquanpeng/one-api) 进行二次开发
 >
-> ⚠️ **注意：本魔改版与官方版本存在差异，请以本仓库的安装说明为准**
+> ⚠️ **注意：本 Demo 版包含额外优化功能，请以本仓库的说明为准**
+
+---
+
+## 🎯 Demo 版优化特性
+
+本 Demo 版在官方版本基础上增加了以下优化功能：
+
+### 🛡️ URL 防呆设计
+
+- 自动处理 URL 格式问题，避免因末尾斜杠、多余空格等导致的请求失败
+- 智能识别并修正常见的 URL 输入错误
+- 提升配置过程的容错性，降低使用门槛
+
+### 🔗 SillyTavern + Google AI Studio 支持
+
+- 支持在 [SillyTavern](https://github.com/SillyTavern/SillyTavern) 中使用 Google AI Studio 接口
+- 可通过 Google AI Studio 兼容格式拉取和调用 New API 中的模型
+- 为 SillyTavern 用户提供更灵活的模型调用方式
 
 > [!IMPORTANT]  
 > - 本项目仅供个人学习使用，不保证稳定性，且不提供任何技术支持
@@ -68,7 +86,7 @@
 ### 使用 Docker Compose（推荐）
 
 ```bash
-# 克隆魔改版项目
+# 克隆 Demo 版项目
 git clone https://github.com/pinkhtwo/new-api.git
 cd new-api
 
@@ -104,15 +122,15 @@ docker run --name new-api -d --restart always \
 
 > **💡 提示：**
 > - `-v ./data:/data` 会将数据保存在当前目录的 `data` 文件夹中，你也可以改为绝对路径如 `-v /your/custom/path:/data`
-> - 如需使用魔改版特性，建议自行构建 Docker 镜像或从源码运行
+> - 如需使用 Demo 版特性，建议自行构建 Docker 镜像或从源码运行
 
 </details>
 
 <details>
-<summary><strong>从源码运行（推荐魔改版）</strong></summary>
+<summary><strong>从源码运行（推荐 Demo 版）</strong></summary>
 
 ```bash
-# 克隆魔改版项目
+# 克隆 Demo 版项目
 git clone https://github.com/pinkhtwo/new-api.git
 cd new-api
 
@@ -140,7 +158,7 @@ go build -o new-api
 
 ### 📖 [官方文档](https://docs.newapi.pro/)
 
-> **注意：** 官方文档适用于原版 New API，本魔改版可能存在差异
+> **注意：** 官方文档适用于原版 New API，本 Demo 版的优化特性请参考本 README
 
 </div>
 
@@ -269,9 +287,9 @@ go build -o new-api
 ## 🚢 部署
 
 > [!TIP]
-> **魔改版建议从源码构建或自行构建 Docker 镜像**
+> **Demo 版建议从源码构建或自行构建 Docker 镜像**
 >
-> 官方 Docker 镜像：`calciumion/new-api:latest`（不包含魔改内容）
+> 官方 Docker 镜像：`calciumion/new-api:latest`（不包含 Demo 版优化内容）
 
 ### 📋 部署要求
 
@@ -308,7 +326,7 @@ go build -o new-api
 <summary><strong>方式 1：Docker Compose</strong></summary>
 
 ```bash
-# 克隆魔改版项目
+# 克隆 Demo 版项目
 git clone https://github.com/pinkhtwo/new-api.git
 cd new-api
 
@@ -402,7 +420,7 @@ docker run --name new-api -d --restart always \
 | 资源 | 链接 |
 |------|------|
 | 📘 常见问题 | [FAQ](https://docs.newapi.pro/support/faq) |
-| 🐛 魔改版问题反馈 | [Issues](https://github.com/pinkhtwo/new-api/issues) |
+| 🐛 Demo 版问题反馈 | [Issues](https://github.com/pinkhtwo/new-api/issues) |
 | 📚 官方文档（参考） | [官方文档](https://docs.newapi.pro/support) |
 
 ### 🤝 贡献指南
@@ -428,7 +446,7 @@ docker run --name new-api -d --restart always \
 
 <div align="center">
 
-### 💖 感谢使用 New API 魔改版
+### 💖 感谢使用 New API Demo 版
 
 如果这个项目对你有帮助，欢迎给一个 ⭐️ Star！
 
