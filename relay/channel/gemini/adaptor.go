@@ -127,6 +127,16 @@ func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
 
 func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 
+	// ============================================================
+	// 防呆设计：当使用 OpenAI 格式请求 Gemini 渠道时，
+	// 说明上游服务是 OpenAI 兼容的反代（如 CatieCli），
+	// 此时应该构建 OpenAI 格式的 URL，而不是 Gemini 原生格式。
+	// ============================================================
+	if info.RelayFormat == types.RelayFormatOpenAI {
+		// 使用 OpenAI 兼容格式的 URL
+		return relaycommon.GetFullRequestURL(info.ChannelBaseUrl, info.RequestURLPath, info.ChannelType), nil
+	}
+
 	if model_setting.GetGeminiSettings().ThinkingAdapterEnabled &&
 		!model_setting.ShouldPreserveThinkingSuffix(info.OriginModelName) {
 		// 新增逻辑：处理 -thinking-<budget> 格式
@@ -170,13 +180,32 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 
 func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Header, info *relaycommon.RelayInfo) error {
 	channel.SetupApiRequestHeader(info, c, req)
-	req.Set("x-goog-api-key", info.ApiKey)
+
+	// ============================================================
+	// 防呆设计：当使用 OpenAI 格式请求时，
+	// 使用 OpenAI 格式的认证头 (Authorization: Bearer)
+	// 而不是 Gemini 原生的认证头 (x-goog-api-key)
+	// ============================================================
+	if info.RelayFormat == types.RelayFormatOpenAI {
+		req.Set("Authorization", "Bearer "+info.ApiKey)
+	} else {
+		req.Set("x-goog-api-key", info.ApiKey)
+	}
 	return nil
 }
 
 func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayInfo, request *dto.GeneralOpenAIRequest) (any, error) {
 	if request == nil {
 		return nil, errors.New("request is nil")
+	}
+
+	// ============================================================
+	// 防呆设计：当使用 OpenAI 格式请求时，
+	// 直接返回原始 OpenAI 请求，不进行格式转换。
+	// 这样可以正确转发给 OpenAI 兼容反代（如 CatieCli）。
+	// ============================================================
+	if info.RelayFormat == types.RelayFormatOpenAI {
+		return request, nil
 	}
 
 	geminiRequest, err := CovertOpenAI2Gemini(c, *request, info)
@@ -244,6 +273,16 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, request
 }
 
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
+	// ============================================================
+	// 防呆设计：当使用 OpenAI 格式请求时，上游返回的是 OpenAI 格式响应
+	// 需要使用 OpenAI adaptor 的响应处理逻辑，而不是 Gemini 的
+	// ============================================================
+	if info.RelayFormat == types.RelayFormatOpenAI {
+		// 使用 OpenAI adaptor 处理响应
+		openaiAdaptor := openai.Adaptor{}
+		return openaiAdaptor.DoResponse(c, resp, info)
+	}
+
 	if info.RelayMode == constant.RelayModeGemini {
 		if strings.Contains(info.RequestURLPath, ":embedContent") ||
 			strings.Contains(info.RequestURLPath, ":batchEmbedContents") {

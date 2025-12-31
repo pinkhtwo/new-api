@@ -22,15 +22,97 @@ type HasImage interface {
 	HasImage() bool
 }
 
+// openaiCompatiblePaths 定义需要 /v1 前缀的 OpenAI 兼容 API 路径
+var openaiCompatiblePaths = []string{
+	"/chat/completions",
+	"/completions",
+	"/embeddings",
+	"/models",
+	"/images/generations",
+	"/images/edits",
+	"/images/variations",
+	"/audio/transcriptions",
+	"/audio/translations",
+	"/audio/speech",
+	"/moderations",
+	"/files",
+	"/fine-tuning/jobs",
+	"/batches",
+	"/realtime",
+	"/responses",
+	"/rerank",
+	"/assistants",
+	"/threads",
+	"/messages",
+	"/runs",
+	"/vector_stores",
+}
+
+// channelsRequiringV1Prefix 定义需要 /v1 前缀的渠道类型
+// 这些渠道使用标准 OpenAI 兼容 API 格式
+var channelsRequiringV1Prefix = map[int]bool{
+	constant.ChannelTypeOpenAI:         true,
+	constant.ChannelTypeOpenAIMax:      true,
+	constant.ChannelTypeOhMyGPT:        true,
+	constant.ChannelTypeAILS:           true,
+	constant.ChannelTypeAIProxy:        true,
+	constant.ChannelTypeAPI2GPT:        true,
+	constant.ChannelTypeAIGC2D:         true,
+	constant.ChannelTypeOpenRouter:     true,
+	constant.ChannelTypeAIProxyLibrary: true,
+	constant.ChannelTypeFastGPT:        true,
+	constant.ChannelTypeMoonshot:       true,
+	constant.ChannelTypePerplexity:     true,
+	constant.ChannelTypeLingYiWanWu:    true,
+	constant.ChannelTypeSiliconFlow:    true,
+	constant.ChannelTypeMistral:        true,
+	constant.ChannelTypeDeepSeek:       true,
+	constant.ChannelTypeMokaAI:         true,
+	constant.ChannelTypeXinference:     true,
+	constant.ChannelTypeXai:            true,
+	constant.ChannelTypeSubmodel:       true,
+	constant.ChannelTypeSora:           true,
+	constant.ChannelTypeOllama:         true,
+	// 防呆设计：Gemini 渠道也可能使用 OpenAI 兼容反代（如 CatieCli），
+	// 当通过 OpenAI 格式请求时需要 /v1 前缀
+	constant.ChannelTypeGemini: true,
+}
+
+// NormalizeRequestPath 规范化请求路径，确保 OpenAI 兼容渠道有正确的 /v1 前缀
+func NormalizeRequestPath(requestURL string, channelType int) string {
+	// 如果渠道不需要 /v1 前缀，直接返回原路径
+	if !channelsRequiringV1Prefix[channelType] {
+		return requestURL
+	}
+
+	// 如果路径已经以 /v1 开头，直接返回
+	if strings.HasPrefix(requestURL, "/v1/") || requestURL == "/v1" {
+		return requestURL
+	}
+
+	// 检查是否是 OpenAI 兼容的 API 路径
+	for _, path := range openaiCompatiblePaths {
+		if strings.HasPrefix(requestURL, path) {
+			// 添加 /v1 前缀
+			return "/v1" + requestURL
+		}
+	}
+
+	// 对于其他路径，保持不变
+	return requestURL
+}
+
 func GetFullRequestURL(baseURL string, requestURL string, channelType int) string {
-	fullRequestURL := fmt.Sprintf("%s%s", baseURL, requestURL)
+	// 规范化请求路径：为需要 /v1 前缀的渠道自动添加前缀
+	normalizedURL := NormalizeRequestPath(requestURL, channelType)
+	fullRequestURL := fmt.Sprintf("%s%s", baseURL, normalizedURL)
 
 	if strings.HasPrefix(baseURL, "https://gateway.ai.cloudflare.com") {
 		switch channelType {
 		case constant.ChannelTypeOpenAI:
-			fullRequestURL = fmt.Sprintf("%s%s", baseURL, strings.TrimPrefix(requestURL, "/v1"))
+			fullRequestURL = fmt.Sprintf("%s%s", baseURL, strings.TrimPrefix(normalizedURL, "/v1"))
 		case constant.ChannelTypeAzure:
-			fullRequestURL = fmt.Sprintf("%s%s", baseURL, strings.TrimPrefix(requestURL, "/openai/deployments"))
+			fullRequestURL = fmt.Sprintf("%s%s", baseURL, strings.TrimPrefix(normalizedURL, "/openai/deployments"))
 		}
 	}
 	return fullRequestURL
