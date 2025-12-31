@@ -45,6 +45,31 @@ func GetGroupEnabledModels(group string) []string {
 	return models
 }
 
+// GetGroupEnabledModelsByChannelType 获取指定分组下指定渠道类型的启用模型
+// 用于 Gemini 接口只返回 Gemini 渠道类型的模型
+func GetGroupEnabledModelsByChannelType(group string, channelType int) []string {
+	var models []string
+	// 关联 abilities 表和 channels 表，筛选指定渠道类型的模型
+	DB.Table("abilities").
+		Select("DISTINCT abilities.model").
+		Joins("LEFT JOIN channels ON abilities.channel_id = channels.id").
+		Where("abilities."+commonGroupCol+" = ? AND abilities.enabled = ? AND channels.type = ?", group, true, channelType).
+		Pluck("model", &models)
+	return models
+}
+
+// GetAllGroupsEnabledModelsByChannelType 获取所有分组下指定渠道类型的启用模型（用于 auto 分组）
+func GetAllGroupsEnabledModelsByChannelType(groups []string, channelType int) []string {
+	var models []string
+	// 关联 abilities 表和 channels 表，筛选指定渠道类型的模型
+	DB.Table("abilities").
+		Select("DISTINCT abilities.model").
+		Joins("LEFT JOIN channels ON abilities.channel_id = channels.id").
+		Where("abilities."+commonGroupCol+" IN ? AND abilities.enabled = ? AND channels.type = ?", groups, true, channelType).
+		Pluck("model", &models)
+	return models
+}
+
 func GetEnabledModels() []string {
 	var models []string
 	// Find distinct models

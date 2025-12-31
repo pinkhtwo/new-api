@@ -169,16 +169,27 @@ func ListModels(c *gin.Context, modelType int) {
 		}
 		var models []string
 		if tokenGroup == "auto" {
-			for _, autoGroup := range service.GetUserAutoGroup(userGroup) {
-				groupModels := model.GetGroupEnabledModels(autoGroup)
-				for _, g := range groupModels {
-					if !common.StringsContains(models, g) {
-						models = append(models, g)
+			autoGroups := service.GetUserAutoGroup(userGroup)
+			// 如果是 Gemini 接口请求，只获取 Gemini 渠道类型的模型
+			if modelType == constant.ChannelTypeGemini {
+				models = model.GetAllGroupsEnabledModelsByChannelType(autoGroups, constant.ChannelTypeGemini)
+			} else {
+				for _, autoGroup := range autoGroups {
+					groupModels := model.GetGroupEnabledModels(autoGroup)
+					for _, g := range groupModels {
+						if !common.StringsContains(models, g) {
+							models = append(models, g)
+						}
 					}
 				}
 			}
 		} else {
-			models = model.GetGroupEnabledModels(group)
+			// 如果是 Gemini 接口请求，只获取 Gemini 渠道类型的模型
+			if modelType == constant.ChannelTypeGemini {
+				models = model.GetGroupEnabledModelsByChannelType(group, constant.ChannelTypeGemini)
+			} else {
+				models = model.GetGroupEnabledModels(group)
+			}
 		}
 		for _, modelName := range models {
 			if !acceptUnsetRatioModel {
