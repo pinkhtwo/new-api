@@ -75,28 +75,53 @@ func testChannel(channel *model.Channel, testModel string, endpointType string) 
 		}
 	}
 
-	requestPath := "/v1/chat/completions"
+	var requestPath string
+	var preferredEndpoint constant.EndpointType
 
 	// 如果指定了端点类型，使用指定的端点类型
 	if endpointType != "" {
-		if endpointInfo, ok := common.GetDefaultEndpointInfo(constant.EndpointType(endpointType)); ok {
+		preferredEndpoint = constant.EndpointType(endpointType)
+		if endpointInfo, ok := common.GetDefaultEndpointInfo(preferredEndpoint); ok {
 			requestPath = endpointInfo.Path
+		} else {
+			requestPath = "/v1/chat/completions"
 		}
 	} else {
-		// 如果没有指定端点类型，使用原有的自动检测逻辑
-		// 先判断是否为 Embedding 模型
+		// 如果没有指定端点类型，根据渠道类型自动选择最优的端点格式
+		// 获取该渠道支持的端点类型列表（第一个是首选）
+		preferredEndpoints := common.GetEndpointTypesByChannelType(channel.Type, testModel)
+		if len(preferredEndpoints) > 0 {
+			preferredEndpoint = preferredEndpoints[0]
+			if endpointInfo, ok := common.GetDefaultEndpointInfo(preferredEndpoint); ok {
+				requestPath = endpointInfo.Path
+			} else {
+				requestPath = "/v1/chat/completions"
+			}
+		} else {
+			requestPath = "/v1/chat/completions"
+			preferredEndpoint = constant.EndpointTypeOpenAI
+		}
+
+		// 特殊处理：Embedding 模型（覆盖上面的默认选择）
 		if strings.Contains(strings.ToLower(testModel), "embedding") ||
 			strings.HasPrefix(testModel, "m3e") || // m3e 系列模型
 			strings.Contains(testModel, "bge-") || // bge 系列模型
 			strings.Contains(testModel, "embed") ||
 			channel.Type == constant.ChannelTypeMokaAI { // 其他 embedding 模型
 			requestPath = "/v1/embeddings" // 修改请求路径
+			preferredEndpoint = constant.EndpointTypeEmbeddings
 		}
 
 		// VolcEngine 图像生成模型
 		if channel.Type == constant.ChannelTypeVolcEngine && strings.Contains(testModel, "seedream") {
 			requestPath = "/v1/images/generations"
+			preferredEndpoint = constant.EndpointTypeImageGeneration
 		}
+	}
+
+	// 替换路径中的 {model} 占位符（用于 Gemini 格式）
+	if strings.Contains(requestPath, "{model}") {
+		requestPath = strings.Replace(requestPath, "{model}", testModel, 1)
 	}
 
 	c.Request = &http.Request{
@@ -131,52 +156,10 @@ func testChannel(channel *model.Channel, testModel string, endpointType string) 
 		}
 	}
 
-	// Determine relay format based on endpoint type or request path
-	var relayFormat types.RelayFormat
-	if endpointType != "" {
-		// 根据指定的端点类型设置 relayFormat
-		switch constant.EndpointType(endpointType) {
-		case constant.EndpointTypeOpenAI:
-			relayFormat = types.RelayFormatOpenAI
-		case constant.EndpointTypeOpenAIResponse:
-			relayFormat = types.RelayFormatOpenAIResponses
-		case constant.EndpointTypeAnthropic:
-			relayFormat = types.RelayFormatClaude
-		case constant.EndpointTypeGemini:
-			relayFormat = types.RelayFormatGemini
-		case constant.EndpointTypeJinaRerank:
-			relayFormat = types.RelayFormatRerank
-		case constant.EndpointTypeImageGeneration:
-			relayFormat = types.RelayFormatOpenAIImage
-		case constant.EndpointTypeEmbeddings:
-			relayFormat = types.RelayFormatEmbedding
-		default:
-			relayFormat = types.RelayFormatOpenAI
-		}
-	} else {
-		// 根据请求路径自动检测
-		relayFormat = types.RelayFormatOpenAI
-		if c.Request.URL.Path == "/v1/embeddings" {
-			relayFormat = types.RelayFormatEmbedding
-		}
-		if c.Request.URL.Path == "/v1/images/generations" {
-			relayFormat = types.RelayFormatOpenAIImage
-		}
-		if c.Request.URL.Path == "/v1/messages" {
-			relayFormat = types.RelayFormatClaude
-		}
-		if strings.Contains(c.Request.URL.Path, "/v1beta/models") {
-			relayFormat = types.RelayFormatGemini
-		}
-		if c.Request.URL.Path == "/v1/rerank" || c.Request.URL.Path == "/rerank" {
-			relayFormat = types.RelayFormatRerank
-		}
-		if c.Request.URL.Path == "/v1/responses" {
-			relayFormat = types.RelayFormatOpenAIResponses
-		}
-	}
+	// Determine relay format based on preferredEndpoint (已在上面根据端点类型或渠道类型确定)
+	relayFormat := endpointTypeToRelayFormat(preferredEndpoint)
 
-	request := buildTestRequest(testModel, endpointType)
+	request := buildTestRequest(testModel, string(preferredEndpoint))
 
 	info, err := relaycommon.GenRelayInfo(c, relayFormat, request, nil)
 
@@ -640,4 +623,27 @@ func AutomaticallyTestChannels() {
 			}
 		}
 	})
+}
+
+// endpointTypeToRelayFormat 将端点类型转换为 RelayFormat
+// 用于渠道测试时根据渠道类型选择正确的请求格式
+func endpointTypeToRelayFormat(endpointType constant.EndpointType) types.RelayFormat {
+	switch endpointType {
+	case constant.EndpointTypeOpenAI:
+		return types.RelayFormatOpenAI
+	case constant.EndpointTypeOpenAIResponse:
+		return types.RelayFormatOpenAIResponses
+	case constant.EndpointTypeAnthropic:
+		return types.RelayFormatClaude
+	case constant.EndpointTypeGemini:
+		return types.RelayFormatGemini
+	case constant.EndpointTypeJinaRerank:
+		return types.RelayFormatRerank
+	case constant.EndpointTypeImageGeneration:
+		return types.RelayFormatOpenAIImage
+	case constant.EndpointTypeEmbeddings:
+		return types.RelayFormatEmbedding
+	default:
+		return types.RelayFormatOpenAI
+	}
 }
