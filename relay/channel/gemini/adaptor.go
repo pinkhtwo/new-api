@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	channelconstant "github.com/QuantumNous/new-api/constant"
 	"github.com/QuantumNous/new-api/dto"
 	"github.com/QuantumNous/new-api/relay/channel"
 	"github.com/QuantumNous/new-api/relay/channel/openai"
@@ -128,11 +129,13 @@ func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
 func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 
 	// ============================================================
-	// 防呆设计：当使用 OpenAI 格式请求 Gemini 渠道时，
-	// 说明上游服务是 OpenAI 兼容的反代（如 CatieCli），
-	// 此时应该构建 OpenAI 格式的 URL，而不是 Gemini 原生格式。
+	// 防呆设计：当渠道类型不是 Gemini 时（例如配置了 OpenAI 兼容的反代），
+	// 应该构建 OpenAI 格式的 URL，而不是 Gemini 原生格式。
+	// 注意：这里通过渠道类型判断，而不是请求格式，
+	// 因为用户可能使用 OpenAI 格式请求调用 Gemini 渠道，
+	// 此时仍需转换为 Gemini 原生格式。
 	// ============================================================
-	if info.RelayFormat == types.RelayFormatOpenAI {
+	if info.ChannelType != channelconstant.ChannelTypeGemini {
 		// 使用 OpenAI 兼容格式的 URL
 		return relaycommon.GetFullRequestURL(info.ChannelBaseUrl, info.RequestURLPath, info.ChannelType), nil
 	}
@@ -182,11 +185,11 @@ func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Header, info *rel
 	channel.SetupApiRequestHeader(info, c, req)
 
 	// ============================================================
-	// 防呆设计：当使用 OpenAI 格式请求时，
+	// 防呆设计：当渠道类型不是 Gemini 时，
 	// 使用 OpenAI 格式的认证头 (Authorization: Bearer)
 	// 而不是 Gemini 原生的认证头 (x-goog-api-key)
 	// ============================================================
-	if info.RelayFormat == types.RelayFormatOpenAI {
+	if info.ChannelType != channelconstant.ChannelTypeGemini {
 		req.Set("Authorization", "Bearer "+info.ApiKey)
 	} else {
 		req.Set("x-goog-api-key", info.ApiKey)
@@ -200,11 +203,11 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 	}
 
 	// ============================================================
-	// 防呆设计：当使用 OpenAI 格式请求时，
+	// 防呆设计：当渠道类型不是 Gemini 时，
 	// 直接返回原始 OpenAI 请求，不进行格式转换。
 	// 这样可以正确转发给 OpenAI 兼容反代（如 CatieCli）。
 	// ============================================================
-	if info.RelayFormat == types.RelayFormatOpenAI {
+	if info.ChannelType != channelconstant.ChannelTypeGemini {
 		return request, nil
 	}
 
@@ -274,10 +277,10 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, request
 
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
 	// ============================================================
-	// 防呆设计：当使用 OpenAI 格式请求时，上游返回的是 OpenAI 格式响应
+	// 防呆设计：当渠道类型不是 Gemini 时，上游返回的是 OpenAI 格式响应
 	// 需要使用 OpenAI adaptor 的响应处理逻辑，而不是 Gemini 的
 	// ============================================================
-	if info.RelayFormat == types.RelayFormatOpenAI {
+	if info.ChannelType != channelconstant.ChannelTypeGemini {
 		// 使用 OpenAI adaptor 处理响应
 		openaiAdaptor := openai.Adaptor{}
 		return openaiAdaptor.DoResponse(c, resp, info)
