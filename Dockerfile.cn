@@ -5,10 +5,10 @@ WORKDIR /build
 COPY web/package.json .
 COPY web/package-lock.json* .
 # 使用淘宝 npm 镜像，添加 --legacy-peer-deps 解决依赖冲突
-# 然后手动安装 antd 依赖（@lobehub/icons 需要）
+# 然后手动安装 antd 和 semi-ui 依赖
 RUN npm config set registry https://registry.npmmirror.com && \
     npm install --legacy-peer-deps && \
-    npm install antd --legacy-peer-deps
+    npm install antd @douyinfe/semi-ui --legacy-peer-deps
 COPY ./web .
 COPY ./VERSION .
 RUN DISABLE_ESLINT_PLUGIN='true' VITE_REACT_APP_VERSION=$(cat VERSION) npm run build
