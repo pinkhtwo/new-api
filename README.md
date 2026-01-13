@@ -218,9 +218,11 @@ go build -o new-api
 - 🚦 用户级别模型限流
 
 **格式转换：**
-- 🔄 OpenAI ⇄ Claude Messages
-- 🔄 OpenAI ⇄ Gemini Chat
-- 🔄 思考转内容功能
+- 🔄 **OpenAI Compatible ⇄ Claude Messages**
+- 🔄 **OpenAI Compatible → Google Gemini**
+- 🔄 **Google Gemini → OpenAI Compatible** - 仅支持文本，暂不支持函数调用
+- 🚧 **OpenAI Compatible ⇄ OpenAI Responses** - 开发中
+- 🔄 **思考转内容功能**
 
 **Reasoning Effort 支持：**
 
