@@ -59,6 +59,7 @@ func SetWebRouter(router *gin.Engine, buildFS embed.FS, indexPage []byte) {
 	router.Use(middleware.Cache())
 	router.Use(static.Serve("/", common.EmbedFolder(buildFS, "web/dist")))
 	router.NoRoute(func(c *gin.Context) {
+		c.Set(middleware.RouteTagKey, "web")
 		// 检查是否是 API 请求路径
 		// 防呆设计：支持带 /v1 和不带 /v1 的 API 路径
 		// 路径规范化已在 HTTP 层处理（main.go 中的 PathNormalizeHandler）

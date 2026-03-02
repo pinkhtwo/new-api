@@ -17,80 +17,11 @@ func SetRelayRouter(router *gin.Engine) {
 	router.Use(middleware.StatsMiddleware())
 
 	// https://platform.openai.com/docs/api-reference/introduction
-	registerModelsRouter(router.Group("/v1/models"))
-	registerModelsRouter(router.Group("/models")) // compatibility for missing /v1 prefix
-
-	registerGeminiModelsRouter(router.Group("/v1beta/models"))
-	registerGeminiModelsRouter(router.Group("/v1/v1beta/models")) // compatibility for extra /v1 prefix
-
-	registerGeminiCompatibleRouter(router.Group("/v1beta/openai/models"))
-	registerGeminiCompatibleRouter(router.Group("/v1/v1beta/openai/models")) // compatibility for extra /v1 prefix
-
-	playgroundRouter := router.Group("/pg")
-	playgroundRouter.Use(middleware.SystemPerformanceCheck())
-	playgroundRouter.Use(middleware.UserAuth(), middleware.Distribute())
+	modelsRouter := router.Group("/v1/models")
+	modelsRouter.Use(middleware.RouteTag("relay"))
+	modelsRouter.Use(middleware.TokenAuth())
 	{
-		playgroundRouter.POST("/chat/completions", controller.Playground)
-	}
-
-	registerOpenAICompatibleRoutes(router.Group("/v1"))
-	registerOpenAICompatibleRoutes(router.Group("")) // compatibility for missing /v1 prefix
-
-	relayMjRouter := router.Group("/mj")
-	relayMjRouter.Use(middleware.SystemPerformanceCheck())
-	registerMjRouterGroup(relayMjRouter)
-
-	relayMjModeRouter := router.Group("/:mode/mj")
-	relayMjModeRouter.Use(middleware.SystemPerformanceCheck())
-	registerMjRouterGroup(relayMjModeRouter)
-
-	relaySunoRouter := router.Group("/suno")
-	relaySunoRouter.Use(middleware.SystemPerformanceCheck())
-	relaySunoRouter.Use(middleware.TokenAuth(), middleware.Distribute())
-	{
-		relaySunoRouter.POST("/submit/:action", controller.RelayTask)
-		relaySunoRouter.POST("/fetch", controller.RelayTask)
-		relaySunoRouter.GET("/fetch/:id", controller.RelayTask)
-	}
-
-	registerGeminiRelayRouter(router.Group("/v1beta"))
-	registerGeminiRelayRouter(router.Group("/v1/v1beta")) // compatibility for extra /v1 prefix
-}
-
-func registerGeminiModelsRouter(group *gin.RouterGroup) {
-	group.Use(middleware.TokenAuth())
-	{
-		group.GET("", func(c *gin.Context) {
-			controller.ListModels(c, constant.ChannelTypeGemini)
-		})
-	}
-}
-
-func registerGeminiCompatibleRouter(group *gin.RouterGroup) {
-	group.Use(middleware.TokenAuth())
-	{
-		group.GET("", func(c *gin.Context) {
-			controller.ListModels(c, constant.ChannelTypeOpenAI)
-		})
-	}
-}
-
-func registerGeminiRelayRouter(group *gin.RouterGroup) {
-	group.Use(middleware.SystemPerformanceCheck())
-	group.Use(middleware.TokenAuth())
-	group.Use(middleware.ModelRequestRateLimit())
-	group.Use(middleware.Distribute())
-	{
-		group.POST("/models/*path", func(c *gin.Context) {
-			controller.Relay(c, types.RelayFormatGemini)
-		})
-	}
-}
-
-func registerModelsRouter(group *gin.RouterGroup) {
-	group.Use(middleware.TokenAuth())
-	{
-		group.GET("", func(c *gin.Context) {
+		modelsRouter.GET("", func(c *gin.Context) {
 			switch {
 			case c.GetHeader("x-api-key") != "" && c.GetHeader("anthropic-version") != "":
 				controller.ListModels(c, constant.ChannelTypeAnthropic)
@@ -101,7 +32,7 @@ func registerModelsRouter(group *gin.RouterGroup) {
 			}
 		})
 
-		group.GET("/:model", func(c *gin.Context) {
+		modelsRouter.GET("/:model", func(c *gin.Context) {
 			switch {
 			case c.GetHeader("x-api-key") != "" && c.GetHeader("anthropic-version") != "":
 				controller.RetrieveModel(c, constant.ChannelTypeAnthropic)
@@ -110,15 +41,87 @@ func registerModelsRouter(group *gin.RouterGroup) {
 			}
 		})
 	}
-}
 
-func registerOpenAICompatibleRoutes(group *gin.RouterGroup) {
-	group.Use(middleware.SystemPerformanceCheck())
-	group.Use(middleware.TokenAuth())
-	group.Use(middleware.ModelRequestRateLimit())
-
+	// compatibility for missing /v1 prefix
+	modelsRouterCompat := router.Group("/models")
+	modelsRouterCompat.Use(middleware.RouteTag("relay"))
+	modelsRouterCompat.Use(middleware.TokenAuth())
 	{
-		wsRouter := group.Group("")
+		modelsRouterCompat.GET("", func(c *gin.Context) {
+			switch {
+			case c.GetHeader("x-api-key") != "" && c.GetHeader("anthropic-version") != "":
+				controller.ListModels(c, constant.ChannelTypeAnthropic)
+			case c.GetHeader("x-goog-api-key") != "" || c.Query("key") != "":
+				controller.RetrieveModel(c, constant.ChannelTypeGemini)
+			default:
+				controller.ListModels(c, constant.ChannelTypeOpenAI)
+			}
+		})
+
+		modelsRouterCompat.GET("/:model", func(c *gin.Context) {
+			switch {
+			case c.GetHeader("x-api-key") != "" && c.GetHeader("anthropic-version") != "":
+				controller.RetrieveModel(c, constant.ChannelTypeAnthropic)
+			default:
+				controller.RetrieveModel(c, constant.ChannelTypeOpenAI)
+			}
+		})
+	}
+
+	geminiRouter := router.Group("/v1beta/models")
+	geminiRouter.Use(middleware.RouteTag("relay"))
+	geminiRouter.Use(middleware.TokenAuth())
+	{
+		geminiRouter.GET("", func(c *gin.Context) {
+			controller.ListModels(c, constant.ChannelTypeGemini)
+		})
+	}
+
+	// compatibility for extra /v1 prefix
+	geminiRouterCompat := router.Group("/v1/v1beta/models")
+	geminiRouterCompat.Use(middleware.RouteTag("relay"))
+	geminiRouterCompat.Use(middleware.TokenAuth())
+	{
+		geminiRouterCompat.GET("", func(c *gin.Context) {
+			controller.ListModels(c, constant.ChannelTypeGemini)
+		})
+	}
+
+	geminiCompatibleRouter := router.Group("/v1beta/openai/models")
+	geminiCompatibleRouter.Use(middleware.RouteTag("relay"))
+	geminiCompatibleRouter.Use(middleware.TokenAuth())
+	{
+		geminiCompatibleRouter.GET("", func(c *gin.Context) {
+			controller.ListModels(c, constant.ChannelTypeOpenAI)
+		})
+	}
+
+	// compatibility for extra /v1 prefix
+	geminiCompatibleRouterCompat := router.Group("/v1/v1beta/openai/models")
+	geminiCompatibleRouterCompat.Use(middleware.RouteTag("relay"))
+	geminiCompatibleRouterCompat.Use(middleware.TokenAuth())
+	{
+		geminiCompatibleRouterCompat.GET("", func(c *gin.Context) {
+			controller.ListModels(c, constant.ChannelTypeOpenAI)
+		})
+	}
+
+	playgroundRouter := router.Group("/pg")
+	playgroundRouter.Use(middleware.RouteTag("relay"))
+	playgroundRouter.Use(middleware.SystemPerformanceCheck())
+	playgroundRouter.Use(middleware.UserAuth(), middleware.Distribute())
+	{
+		playgroundRouter.POST("/chat/completions", controller.Playground)
+	}
+
+	relayV1Router := router.Group("/v1")
+	relayV1Router.Use(middleware.RouteTag("relay"))
+	relayV1Router.Use(middleware.SystemPerformanceCheck())
+	relayV1Router.Use(middleware.TokenAuth())
+	relayV1Router.Use(middleware.ModelRequestRateLimit())
+	{
+		// WebSocket 路由（统一到 Relay）
+		wsRouter := relayV1Router.Group("")
 		wsRouter.Use(middleware.Distribute())
 		wsRouter.GET("/realtime", func(c *gin.Context) {
 			controller.Relay(c, types.RelayFormatOpenAIRealtime)
@@ -126,7 +129,7 @@ func registerOpenAICompatibleRoutes(group *gin.RouterGroup) {
 	}
 
 	{
-		httpRouter := group.Group("")
+		httpRouter := relayV1Router.Group("")
 		httpRouter.Use(middleware.Distribute())
 
 		// claude related routes
@@ -208,6 +211,77 @@ func registerOpenAICompatibleRoutes(group *gin.RouterGroup) {
 		httpRouter.POST("/fine-tunes/:id/cancel", controller.RelayNotImplemented)
 		httpRouter.GET("/fine-tunes/:id/events", controller.RelayNotImplemented)
 		httpRouter.DELETE("/models/:model", controller.RelayNotImplemented)
+	}
+
+	// compatibility for missing /v1 prefix
+	relayRootRouter := router.Group("")
+	relayRootRouter.Use(middleware.RouteTag("relay"))
+	relayRootRouter.Use(middleware.SystemPerformanceCheck())
+	relayRootRouter.Use(middleware.TokenAuth())
+	relayRootRouter.Use(middleware.ModelRequestRateLimit())
+	relayRootRouter.Use(middleware.Distribute())
+	{
+		relayRootRouter.POST("/chat/completions", func(c *gin.Context) {
+			controller.Relay(c, types.RelayFormatOpenAI)
+		})
+		relayRootRouter.POST("/completions", func(c *gin.Context) {
+			controller.Relay(c, types.RelayFormatOpenAI)
+		})
+		relayRootRouter.POST("/embeddings", func(c *gin.Context) {
+			controller.Relay(c, types.RelayFormatEmbedding)
+		})
+		relayRootRouter.POST("/messages", func(c *gin.Context) {
+			controller.Relay(c, types.RelayFormatClaude)
+		})
+		relayRootRouter.POST("/responses", func(c *gin.Context) {
+			controller.Relay(c, types.RelayFormatOpenAIResponses)
+		})
+	}
+
+	relayMjRouter := router.Group("/mj")
+	relayMjRouter.Use(middleware.RouteTag("relay"))
+	relayMjRouter.Use(middleware.SystemPerformanceCheck())
+	registerMjRouterGroup(relayMjRouter)
+
+	relayMjModeRouter := router.Group("/:mode/mj")
+	relayMjModeRouter.Use(middleware.RouteTag("relay"))
+	relayMjModeRouter.Use(middleware.SystemPerformanceCheck())
+	registerMjRouterGroup(relayMjModeRouter)
+
+	relaySunoRouter := router.Group("/suno")
+	relaySunoRouter.Use(middleware.RouteTag("relay"))
+	relaySunoRouter.Use(middleware.SystemPerformanceCheck())
+	relaySunoRouter.Use(middleware.TokenAuth(), middleware.Distribute())
+	{
+		relaySunoRouter.POST("/submit/:action", controller.RelayTask)
+		relaySunoRouter.POST("/fetch", controller.RelayTaskFetch)
+		relaySunoRouter.GET("/fetch/:id", controller.RelayTaskFetch)
+	}
+
+	relayGeminiRouter := router.Group("/v1beta")
+	relayGeminiRouter.Use(middleware.RouteTag("relay"))
+	relayGeminiRouter.Use(middleware.SystemPerformanceCheck())
+	relayGeminiRouter.Use(middleware.TokenAuth())
+	relayGeminiRouter.Use(middleware.ModelRequestRateLimit())
+	relayGeminiRouter.Use(middleware.Distribute())
+	{
+		// Gemini API 路径格式: /v1beta/models/{model_name}:{action}
+		relayGeminiRouter.POST("/models/*path", func(c *gin.Context) {
+			controller.Relay(c, types.RelayFormatGemini)
+		})
+	}
+
+	// compatibility for extra /v1 prefix
+	relayGeminiRouterCompat := router.Group("/v1/v1beta")
+	relayGeminiRouterCompat.Use(middleware.RouteTag("relay"))
+	relayGeminiRouterCompat.Use(middleware.SystemPerformanceCheck())
+	relayGeminiRouterCompat.Use(middleware.TokenAuth())
+	relayGeminiRouterCompat.Use(middleware.ModelRequestRateLimit())
+	relayGeminiRouterCompat.Use(middleware.Distribute())
+	{
+		relayGeminiRouterCompat.POST("/models/*path", func(c *gin.Context) {
+			controller.Relay(c, types.RelayFormatGemini)
+		})
 	}
 }
 
