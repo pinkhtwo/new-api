@@ -239,7 +239,13 @@ func ListModels(c *gin.Context, modelType int) {
 			tokenModelLimit = map[string]bool{}
 		}
 	}
-	models := service.GetGroupsEnabledModels(ownerGroups)
+	// 如果是 Gemini 接口请求，只返回 Gemini 渠道类型的模型
+	var models []string
+	if modelType == constant.ChannelTypeGemini {
+		models = model.GetAllGroupsEnabledModelsByChannelType(ownerGroups, constant.ChannelTypeGemini)
+	} else {
+		models = service.GetGroupsEnabledModels(ownerGroups)
+	}
 	for _, modelName := range models {
 		if modelLimitEnable {
 			matchingName := ratio_setting.FormatMatchingModelName(modelName)
@@ -289,8 +295,9 @@ func ListModels(c *gin.Context, modelType int) {
 		userGeminiModels := make([]dto.GeminiModel, len(userOpenAiModels))
 		for i, model := range userOpenAiModels {
 			userGeminiModels[i] = dto.GeminiModel{
-				Name:        model.Id,
-				DisplayName: model.Id,
+				Name:                       "models/" + model.Id,
+				DisplayName:                model.Id,
+				SupportedGenerationMethods: []interface{}{"generateContent", "streamGenerateContent", "countTokens"},
 			}
 		}
 		c.JSON(200, gin.H{

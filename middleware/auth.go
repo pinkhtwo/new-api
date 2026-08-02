@@ -374,18 +374,14 @@ func TokenAuth() func(c *gin.Context) {
 			}
 		}
 		// gemini api 从query中获取key
-		if strings.HasPrefix(c.Request.URL.Path, "/v1beta/models") ||
-			strings.HasPrefix(c.Request.URL.Path, "/v1beta/openai/models") ||
-			strings.HasPrefix(c.Request.URL.Path, "/v1/models/") {
-			skKey := c.Query("key")
-			if skKey != "" {
-				c.Request.Header.Set("Authorization", "Bearer "+skKey)
-			}
-			// 从x-goog-api-key header中获取key
-			xGoogKey := c.Request.Header.Get("x-goog-api-key")
-			if xGoogKey != "" {
-				c.Request.Header.Set("Authorization", "Bearer "+xGoogKey)
-			}
+		// 防呆设计：只有当请求提供了 ?key= 参数或 x-goog-api-key header 时才处理
+		// 这样不会影响管理 API（如 /api/models）的正常工作
+		skKey := c.Query("key")
+		xGoogKey := c.Request.Header.Get("x-goog-api-key")
+		if skKey != "" {
+			c.Request.Header.Set("Authorization", "Bearer "+skKey)
+		} else if xGoogKey != "" {
+			c.Request.Header.Set("Authorization", "Bearer "+xGoogKey)
 		}
 		key := c.Request.Header.Get("Authorization")
 		parts := make([]string, 0)

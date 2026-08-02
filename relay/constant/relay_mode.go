@@ -58,39 +58,43 @@ const (
 
 func Path2RelayMode(path string) int {
 	relayMode := RelayModeUnknown
-	if strings.HasPrefix(path, "/v1/chat/completions") || strings.HasPrefix(path, "/pg/chat/completions") {
+
+	// Compatibility: support both /v1/* and bare /* paths.
+	if strings.HasPrefix(path, "/v1/chat/completions") ||
+		strings.HasPrefix(path, "/chat/completions") ||
+		strings.HasPrefix(path, "/pg/chat/completions") {
 		relayMode = RelayModeChatCompletions
-	} else if strings.HasPrefix(path, "/v1/completions") {
+	} else if strings.HasPrefix(path, "/v1/completions") || strings.HasPrefix(path, "/completions") {
 		relayMode = RelayModeCompletions
-	} else if strings.HasPrefix(path, "/v1/embeddings") {
+	} else if strings.HasPrefix(path, "/v1/embeddings") || strings.HasPrefix(path, "/embeddings") {
 		relayMode = RelayModeEmbeddings
 	} else if strings.HasSuffix(path, "embeddings") {
 		relayMode = RelayModeEmbeddings
-	} else if strings.HasPrefix(path, "/v1/moderations") {
+	} else if strings.HasPrefix(path, "/v1/moderations") || strings.HasPrefix(path, "/moderations") {
 		relayMode = RelayModeModerations
-	} else if strings.HasPrefix(path, "/v1/images/generations") {
+	} else if strings.HasPrefix(path, "/v1/images/generations") || strings.HasPrefix(path, "/images/generations") {
 		relayMode = RelayModeImagesGenerations
-	} else if strings.HasPrefix(path, "/v1/images/edits") {
+	} else if strings.HasPrefix(path, "/v1/images/edits") || strings.HasPrefix(path, "/images/edits") {
 		relayMode = RelayModeImagesEdits
-	} else if strings.HasPrefix(path, "/v1/edits") {
+	} else if strings.HasPrefix(path, "/v1/edits") || strings.HasPrefix(path, "/edits") {
 		relayMode = RelayModeEdits
-	} else if strings.HasPrefix(path, "/v1/responses/compact") {
+	} else if strings.HasPrefix(path, "/v1/responses/compact") || strings.HasPrefix(path, "/responses/compact") {
 		relayMode = RelayModeResponsesCompact
-	} else if strings.HasPrefix(path, "/v1/responses") {
+	} else if strings.HasPrefix(path, "/v1/responses") || strings.HasPrefix(path, "/responses") {
 		relayMode = RelayModeResponses
-	} else if strings.HasPrefix(path, "/v1/alpha/search") {
+	} else if strings.HasPrefix(path, "/v1/alpha/search") || strings.HasPrefix(path, "/alpha/search") {
 		relayMode = RelayModeAlphaSearch
-	} else if strings.HasPrefix(path, "/v1/audio/speech") {
+	} else if strings.HasPrefix(path, "/v1/audio/speech") || strings.HasPrefix(path, "/audio/speech") {
 		relayMode = RelayModeAudioSpeech
-	} else if strings.HasPrefix(path, "/v1/audio/transcriptions") {
+	} else if strings.HasPrefix(path, "/v1/audio/transcriptions") || strings.HasPrefix(path, "/audio/transcriptions") {
 		relayMode = RelayModeAudioTranscription
-	} else if strings.HasPrefix(path, "/v1/audio/translations") {
+	} else if strings.HasPrefix(path, "/v1/audio/translations") || strings.HasPrefix(path, "/audio/translations") {
 		relayMode = RelayModeAudioTranslation
-	} else if strings.HasPrefix(path, "/v1/rerank") {
+	} else if strings.HasPrefix(path, "/v1/rerank") || strings.HasPrefix(path, "/rerank") {
 		relayMode = RelayModeRerank
-	} else if strings.HasPrefix(path, "/v1/realtime") {
+	} else if strings.HasPrefix(path, "/v1/realtime") || strings.HasPrefix(path, "/realtime") {
 		relayMode = RelayModeRealtime
-	} else if strings.HasPrefix(path, "/v1beta/models") || strings.HasPrefix(path, "/v1/models") {
+	} else if strings.HasPrefix(path, "/v1beta/models") || strings.HasPrefix(path, "/v1/models") || strings.HasPrefix(path, "/models") {
 		relayMode = RelayModeGemini
 	} else if strings.HasPrefix(path, "/mj") {
 		relayMode = Path2RelayModeMidjourney(path)

@@ -50,11 +50,57 @@ func SetRelayRouter(router *gin.Engine) {
 		})
 	}
 
+	// compatibility for missing /v1 prefix
+	modelsRouterCompat := router.Group("/models")
+	modelsRouterCompat.Use(middleware.RouteTag("relay"))
+	modelsRouterCompat.Use(middleware.TokenAuth())
+	{
+		modelsRouterCompat.GET("", func(c *gin.Context) {
+			switch {
+			case c.GetHeader("x-api-key") != "" && c.GetHeader("anthropic-version") != "":
+				controller.ListModels(c, constant.ChannelTypeAnthropic)
+			case c.GetHeader("x-goog-api-key") != "" || c.Query("key") != "":
+				controller.RetrieveModel(c, constant.ChannelTypeGemini)
+			default:
+				controller.ListModels(c, constant.ChannelTypeOpenAI)
+			}
+		})
+
+		modelsRouterCompat.GET("/:model", func(c *gin.Context) {
+			switch {
+			case c.GetHeader("x-api-key") != "" && c.GetHeader("anthropic-version") != "":
+				controller.RetrieveModel(c, constant.ChannelTypeAnthropic)
+			default:
+				controller.RetrieveModel(c, constant.ChannelTypeOpenAI)
+			}
+		})
+	}
+
+	// compatibility for extra /v1 prefix
+	geminiRouterCompat := router.Group("/v1/v1beta/models")
+	geminiRouterCompat.Use(middleware.RouteTag("relay"))
+	geminiRouterCompat.Use(middleware.TokenAuth())
+	{
+		geminiRouterCompat.GET("", func(c *gin.Context) {
+			controller.ListModels(c, constant.ChannelTypeGemini)
+		})
+	}
+
 	geminiCompatibleRouter := router.Group("/v1beta/openai/models")
 	geminiCompatibleRouter.Use(middleware.RouteTag("relay"))
 	geminiCompatibleRouter.Use(middleware.TokenAuth())
 	{
 		geminiCompatibleRouter.GET("", func(c *gin.Context) {
+			controller.ListModels(c, constant.ChannelTypeOpenAI)
+		})
+	}
+
+	// compatibility for extra /v1 prefix
+	geminiCompatibleRouterCompat := router.Group("/v1/v1beta/openai/models")
+	geminiCompatibleRouterCompat.Use(middleware.RouteTag("relay"))
+	geminiCompatibleRouterCompat.Use(middleware.TokenAuth())
+	{
+		geminiCompatibleRouterCompat.GET("", func(c *gin.Context) {
 			controller.ListModels(c, constant.ChannelTypeOpenAI)
 		})
 	}
@@ -170,6 +216,31 @@ func SetRelayRouter(router *gin.Engine) {
 		httpRouter.DELETE("/models/:model", controller.RelayNotImplemented)
 	}
 
+	// compatibility for missing /v1 prefix
+	relayRootRouter := router.Group("")
+	relayRootRouter.Use(middleware.RouteTag("relay"))
+	relayRootRouter.Use(middleware.SystemPerformanceCheck())
+	relayRootRouter.Use(middleware.TokenAuth())
+	relayRootRouter.Use(middleware.ModelRequestRateLimit())
+	relayRootRouter.Use(middleware.Distribute())
+	{
+		relayRootRouter.POST("/chat/completions", func(c *gin.Context) {
+			controller.Relay(c, types.RelayFormatOpenAI)
+		})
+		relayRootRouter.POST("/completions", func(c *gin.Context) {
+			controller.Relay(c, types.RelayFormatOpenAI)
+		})
+		relayRootRouter.POST("/embeddings", func(c *gin.Context) {
+			controller.Relay(c, types.RelayFormatEmbedding)
+		})
+		relayRootRouter.POST("/messages", func(c *gin.Context) {
+			controller.Relay(c, types.RelayFormatClaude)
+		})
+		relayRootRouter.POST("/responses", func(c *gin.Context) {
+			controller.Relay(c, types.RelayFormatOpenAIResponses)
+		})
+	}
+
 	relayMjRouter := router.Group("/mj")
 	relayMjRouter.Use(middleware.RouteTag("relay"))
 	relayMjRouter.Use(middleware.SystemPerformanceCheck())
@@ -200,6 +271,19 @@ func SetRelayRouter(router *gin.Engine) {
 	{
 		// Gemini API 路径格式: /v1beta/models/{model_name}:{action}
 		relayGeminiRouter.POST("/models/*path", func(c *gin.Context) {
+			controller.Relay(c, types.RelayFormatGemini)
+		})
+	}
+
+	// compatibility for extra /v1 prefix on Gemini
+	relayGeminiRouterCompat := router.Group("/v1/v1beta")
+	relayGeminiRouterCompat.Use(middleware.RouteTag("relay"))
+	relayGeminiRouterCompat.Use(middleware.SystemPerformanceCheck())
+	relayGeminiRouterCompat.Use(middleware.TokenAuth())
+	relayGeminiRouterCompat.Use(middleware.ModelRequestRateLimit())
+	relayGeminiRouterCompat.Use(middleware.Distribute())
+	{
+		relayGeminiRouterCompat.POST("/models/*path", func(c *gin.Context) {
 			controller.Relay(c, types.RelayFormatGemini)
 		})
 	}

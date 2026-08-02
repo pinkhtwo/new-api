@@ -205,8 +205,10 @@ func main() {
 	}
 
 	srv := &http.Server{
-		Addr:    ":" + port,
-		Handler: server,
+		Addr: ":" + port,
+		// 防呆设计：在 Gin 路由匹配之前规范化路径
+		// 处理双斜杠等问题，例如 //chat/completions -> /chat/completions
+		Handler: PathNormalizeHandler(server),
 	}
 
 	go func() {
@@ -365,4 +367,29 @@ func InitResources() error {
 	service.StartAuthArtifactCleanup()
 
 	return nil
+}
+
+// PathNormalizeHandler 包装 HTTP 处理器，在请求到达 Gin 之前规范化路径
+// 防呆设计：
+//  1. 处理双斜杠等常见路径问题
+//  2. 智能提取 API 端点：无论用户在 URL 中添加什么前缀，都能正确路由
+//     例如：/ABC/v1/chat/completions -> /v1/chat/completions
+//     /我是奶龙/v1beta/models/gemini-pro:generateContent -> /v1beta/models/gemini-pro:generateContent
+func PathNormalizeHandler(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// 规范化路径并智能提取 API 端点
+		originalPath := r.URL.Path
+		extractedPath := common.NormalizeAndExtractPath(originalPath)
+
+		if extractedPath != originalPath {
+			// 更新请求路径
+			r.URL.Path = extractedPath
+			if r.URL.RawPath != "" {
+				r.URL.RawPath = extractedPath
+			}
+		}
+
+		// 调用原始处理器
+		handler.ServeHTTP(w, r)
+	})
 }
